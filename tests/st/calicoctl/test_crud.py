@@ -512,7 +512,7 @@ class TestCalicoctlCommands(TestBase):
         """
         Test CRUD commands behave as expected on the felix configuration resource:
         """
-        # Create a new default BGPConfiguration and get it to determine the current
+        # Create a new default felix configuration and get it to determine the current
         # resource version.
         rc = calicoctl("create", data=felixconfig_name1_rev1)
         rc.assert_no_error()
@@ -521,7 +521,7 @@ class TestCalicoctlCommands(TestBase):
         rc.assert_no_error()
         rev0 = rc.decoded
 
-        # Replace the BGP Configuration (with no resource version) and get it to
+        # Replace the felix configuration (with no resource version) and get it to
         # assert the resource version is not the same.
         rc = calicoctl("replace", data=felixconfig_name1_rev2)
         rc.assert_no_error()
@@ -531,7 +531,7 @@ class TestCalicoctlCommands(TestBase):
         rev1 = rc.decoded
         self.assertNotEqual(rev0['metadata']['resourceVersion'], rev1['metadata']['resourceVersion'])
 
-        # Apply an update to the BGP Configuration and assert the resource version is not the same.
+        # Apply an update to the felix configuration and assert the resource version is not the same.
         rc = calicoctl("apply", data=felixconfig_name1_rev1)
         rc.assert_no_error()
         rc = calicoctl(
@@ -539,6 +539,16 @@ class TestCalicoctlCommands(TestBase):
         rc.assert_no_error()
         rev2 = rc.decoded
         self.assertNotEqual(rev1['metadata']['resourceVersion'], rev2['metadata']['resourceVersion'])
+        
+        # Apply an update to the felix configuration with a large duration.
+        rc = calicoctl("apply", data=felixconfig_name1_rev3)
+        rc.assert_no_error()
+        rc = calicoctl(
+            "get felixconfig %s -o yaml" % name(felixconfig_name1_rev3))
+        rc.assert_no_error()
+        rev3 = rc.decoded
+        self.assertEqual(rev3['spec']['netlinkTimeout'], '2m5s')
+        self.assertEqual(rev3['spec']['reportingTTL'], '2h45m10s')
 
         # Delete the resource by name (i.e. without using a resource version).
         rc = calicoctl("delete felixconfig %s" % name(rev2))
